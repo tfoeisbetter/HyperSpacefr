@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unblocked Games & Apps</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .gradient-bg-2 {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .gradient-bg-3 {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .gradient-bg-4 {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        .card-gradient-1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-gradient-2 {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .card-gradient-3 {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .card-gradient-4 {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        .notification-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 400px;
+        }
+        .notification {
+            background: white;
+            border-left: 4px solid #667eea;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        .game-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .game-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+        .search-bar {
+            position: relative;
+        }
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y-auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 100;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <div id="app">
+        <!-- Navigation -->
+        <nav class="gradient-bg sticky top-0 z-50 shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center gap-4">
+                        <h1 class="text-2xl font-bold">🎮 GameVault</h1>
+                    </div>
+                    <div class="hidden md:flex items-center gap-8">
+                        <button onclick="showTab('games')" class="tab-btn active hover:opacity-80 transition" data-tab="games">Games</button>
+                        <button onclick="showTab('apps')" class="tab-btn hover:opacity-80 transition" data-tab="apps">Apps</button>
+                        <button id="admin-btn" onclick="showTab('admin')" class="tab-btn hidden hover:opacity-80 transition" data-tab="admin">Admin</button>
+                    </div>
+                    <div id="auth-section" class="flex items-center gap-4">
+                        <button id="login-btn" onclick="handleLogin()" class="bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition">Login with Google</button>
+                        <div id="user-profile" class="hidden flex items-center gap-2">
+                            <img id="user-avatar" src="" alt="User" class="w-8 h-8 rounded-full">
+                            <span id="user-name"></span>
+                            <button onclick="handleLogout()" class="bg-red-500 px-3 py-1 rounded text-sm hover:bg-red-600 transition">Logout</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Mobile menu -->
+                <div id="mobile-menu" class="md:hidden pb-4 flex gap-4">
+                    <button onclick="showTab('games')" class="tab-btn active text-sm hover:opacity-80 transition" data-tab="games">Games</button>
+                    <button onclick="showTab('apps')" class="tab-btn text-sm hover:opacity-80 transition" data-tab="apps">Apps</button>
+                    <button id="admin-btn-mobile" onclick="showTab('admin')" class="tab-btn hidden text-sm hover:opacity-80 transition" data-tab="admin">Admin</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Search Bar -->
+        <div class="bg-gray-800 py-4 px-4">
+            <div class="max-w-7xl mx-auto">
+                <div class="search-bar">
+                    <input type="text" id="search-input" placeholder="Search games and apps..." class="w-full px-4 py-2 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <div id="search-results" class="search-results hidden"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Games Tab -->
+        <div id="games-tab" class="tab-content active">
+            <div class="max-w-7xl mx-auto px-4 py-8">
+                <h2 class="text-3xl font-bold mb-8">Popular Games</h2>
+                <div id="games-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- Games will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Apps Tab -->
+        <div id="apps-tab" class="tab-content hidden">
+            <div class="max-w-7xl mx-auto px-4 py-8">
+                <h2 class="text-3xl font-bold mb-8">Useful Apps</h2>
+                <div id="apps-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- Apps will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Tab -->
+        <div id="admin-tab" class="tab-content hidden">
+            <div class="max-w-7xl mx-auto px-4 py-8">
+                <h2 class="text-3xl font-bold mb-8">Admin Dashboard</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Create Game -->
+                    <div class="bg-gray-800 rounded-lg p-6">
+                        <h3 class="text-xl font-bold mb-4">Create New Game/App</h3>
+                        <form id="create-game-form" onsubmit="handleCreateGame(event)">
+                            <input type="text" id="game-name" placeholder="Name" class="w-full mb-3 px-4 py-2 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                            <input type="text" id="game-url" placeholder="Game URL" class="w-full mb-3 px-4 py-2 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                            <input type="text" id="game-image" placeholder="Image URL" class="w-full mb-3 px-4 py-2 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                            <select id="game-type" class="w-full mb-3 px-4 py-2 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                <option value="game">Game</option>
+                                <option value="app">App</option>
+                            </select>
+                            <button type="submit" class="w-full gradient-bg text-white py-2 rounded font-semibold hover:opacity-90 transition">Create</button>
+                        </form>
+                    </div>
+
+                    <!-- Send Notification -->
+                    <div class="bg-gray-800 rounded-lg p-6">
+                        <h3 class="text-xl font-bold mb-4">Send Notification to All Users</h3>
+                        <form id="notification-form" onsubmit="handleSendNotification(event)">
+                            <input type="text" id="notification-title" placeholder="Notification Title" class="w-full mb-3 px-4 py-2 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                            <textarea id="notification-message" placeholder="Notification Message" class="w-full mb-3 px-4 py-2 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 h-24 resize-none" required></textarea>
+                            <button type="submit" class="w-full gradient-bg-2 text-white py-2 rounded font-semibold hover:opacity-90 transition">Send to All</button>
+                        </form>
+                    </div>
+
+                    <!-- Manage Games -->
+                    <div class="bg-gray-800 rounded-lg p-6 lg:col-span-2">
+                        <h3 class="text-xl font-bold mb-4">Manage Games/Apps</h3>
+                        <div id="admin-games-list" class="space-y-3 max-h-96 overflow-y-auto">
+                            <!-- Games list will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Ban Users -->
+                    <div class="bg-gray-800 rounded-lg p-6 lg:col-span-2">
+                        <h3 class="text-xl font-bold mb-4">Users</h3>
+                        <div id="users-list" class="space-y-3 max-h-96 overflow-y-auto">
+                            <!-- Users list will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for playing games -->
+    <div id="game-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
+        <div class="bg-gray-800 rounded-lg p-6 max-w-4xl w-full max-h-96 mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="modal-title" class="text-2xl font-bold"></h2>
+                <button onclick="closeGameModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <iframe id="game-iframe" width="100%" height="500" style="border-radius: 8px; display: none;"></iframe>
+            <div id="game-link-section" style="display: none;">
+                <p class="mb-4">Open the game in a new window:</p>
+                <a id="game-link" href="#" target="_blank" class="gradient-bg text-white px-6 py-2 rounded font-semibold hover:opacity-90 transition inline-block">Open Game</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification container -->
+    <div id="notification-container" class="notification-container"></div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
